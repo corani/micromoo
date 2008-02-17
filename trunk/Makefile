@@ -20,10 +20,6 @@ all:		main.hex
 
 .S.o:
 		$(COMPILE) -x assembler-with-cpp -c $< -o $@
-# "-x assembler-with-cpp" should not be necessary since this is the default
-# file type for the .S (with capital S) extension. However, upper case
-# characters are not always preserved on Windows. To ensure WinAVR
-# compatibility define the file type manually.
 
 .c.s:
 		$(COMPILE) -S $< -o $@
@@ -31,39 +27,19 @@ all:		main.hex
 flash:		all
 		$(AVRDUDE) -U flash:w:main.hex:i
 
-# Fuse low byte:
-# 0xef = 1 1 1 0   1 1 1 1
-#        ^ ^ \+/   \--+--/
-#        | |  |       +------- CKSEL 3..0 (clock selection -> crystal @ 12 MHz)
-#        | |  +--------------- SUT 1..0 (BOD enabled, fast rising power)
-#        | +------------------ CKOUT (clock output on CKOUT pin -> disabled)
-#        +-------------------- CKDIV8 (divide clock by 8 -> don't divide)
-#
-# Fuse high byte:
-# 0xdb = 1 1 0 1   1 0 1 1
-#        ^ ^ ^ ^   \-+-/ ^
-#        | | | |     |   +---- RSTDISBL (disable external reset -> enabled)
-#        | | | |     +-------- BODLEVEL 2..0 (brownout trigger level -> 2.7V)
-#        | | | +-------------- WDTON (watchdog timer always on -> disable)
-#        | | +---------------- SPIEN (enable serial programming -> enabled)
-#        | +------------------ EESAVE (preserve EEPROM on Chip Erase -> not preserved)
-#        +-------------------- DWEN (debug wire enable)
-fuses:		# only needed for attiny2313
+fuses:
 		$(AVRDUDE) -U hfuse:w:0xdb:m -U lfuse:w:0xef:m
 
 clean:
-		rm -f main.hex main.lst main.obj main.cof main.list main.map main.eep.hex main.bin main.elf *.o usbtiny/*.o main.s usbtiny/*.s
+		rm -f *.hex *.o *.bin usbtiny/*.o
 
-# file targets:
 main.bin:	$(OBJECTS)
 		$(COMPILE) -o main.bin $(OBJECTS)
 
 main.hex:	main.bin
-		rm -f main.hex main.eep.hex
+		rm -f main.hex
 		avr-objcopy -j .text -j .data -O ihex main.bin main.hex
-		./checksize main.bin
-# do the checksize script as our last action to allow successful compilation
-# on Windows with WinAVR where the Unix commands will fail.
+		avr-size main.bin
 
 disasm:		main.bin
 		avr-objdump -d main.bin
