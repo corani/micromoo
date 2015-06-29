@@ -1,0 +1,1 @@
+An USB controlled moodlight with an Atmel ATTINY2313 based on [USBtiny](http://www.xs4all.nl/~dicks/avr/usbtiny/)
